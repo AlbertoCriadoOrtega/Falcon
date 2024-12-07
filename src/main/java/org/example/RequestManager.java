@@ -14,7 +14,7 @@ public class RequestManager {
     public static void main(String[] args) {
 
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress(80), 0);
             manageRequest(server);
             server.start();
         } catch (IOException e) {
@@ -23,6 +23,11 @@ public class RequestManager {
         }
     }
 
+    /**
+     * manages the http requests
+     *
+     * @param server the server that will handle the request
+     */
     private static void manageRequest(HttpServer server) {
         server.createContext("/", new HttpHandler() {
             @Override
@@ -35,14 +40,17 @@ public class RequestManager {
                     File resourceFile = filesRetriever.getFile(domain, resource);//consigue le archivo que desea con la peticion
                     sendResponse(exchange, resourceFile);
                 } catch (FileNotFoundException e) {
+                    //todo make logger
                     exchange.sendResponseHeaders(404, 0);
+                } catch (IOException exception) {
+                    //todo make logger
+                    exchange.sendResponseHeaders(500, 0);
                 }
             }
         });
     }
 
     /**
-     *
      * @param exchange
      * @param resourceFile
      * @throws IOException
@@ -62,7 +70,6 @@ public class RequestManager {
     }
 
     /**
-     *
      * @param file
      * @return
      * @throws IOException
