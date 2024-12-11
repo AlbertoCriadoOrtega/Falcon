@@ -1,10 +1,10 @@
-package org.example;
+package org.falcon.files;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
-import org.example.bugManegement.ExitErrorCodes;
+import org.falcon.errors.ExitErrorCodes;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,18 +24,10 @@ import java.util.HashMap;
 public class PageFolders {
 
     private final File JSON_FILE = new File("storage/records.json");
-    private HashMap<String, String> folders;
+    private final HashMap<String, String> folders;
 
     public PageFolders() {
         folders = getStoredJsonRecords();
-    }
-
-    public HashMap<String, String> getFolders() {
-        return folders;
-    }
-
-    public void setFolders(HashMap<String, String> folders) {
-        this.folders = folders;
     }
 
     /**
@@ -57,6 +49,7 @@ public class PageFolders {
             });
 
         } catch (FileNotFoundException e) {
+            //todo make logger
             makeJson();
             return records; //empty hashmap
         } catch (IOException e) {
@@ -92,16 +85,16 @@ public class PageFolders {
         return new File(folders.get(key));
     }
 
-    public File updateJsonEntry(String key, String newValue) {
-        return new File(folders.get(key));
-    }
-
-    public File deleteJsonEntry(String key) {
-        return new File(folders.get(key));
-    }
-
-    public File newFolderEntry(String key, String newValue) {
-        return new File(folders.get(key));
-    }
+//    public File updateJsonEntry(String key, String newValue) {
+//        return new File(folders.get(key));
+//    }
+//
+//    public File deleteJsonEntry(String key) {
+//        return new File(folders.get(key));
+//    }
+//
+//    public File newFolderEntry(String key, String newValue) {
+//        return new File(folders.get(key));
+//    }
 
 }
