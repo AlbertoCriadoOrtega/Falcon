@@ -1,11 +1,11 @@
-package org.falcon;
+package org.falcon.network;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import org.falcon.files.FileRetriever;
-import org.falcon.files.procesing.CssProcessor;
-import org.falcon.files.procesing.JavascriptProcessor;
-import org.falcon.files.procesing.PhpProcessor;
+import org.falcon.network.errors.StaticFileRequestException;
+import org.falcon.network.files.FileRetriever;
+import org.falcon.network.files.procesing.FileProcessor;
+import org.falcon.network.files.procesing.PhpProcessor;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -16,9 +16,7 @@ import java.nio.file.Files;
  */
 public class RequestManager implements HttpHandler {
 
-    public RequestManager() {
-
-    }
+    public RequestManager() {}
 
     /**
      * Retrieves the files from their own folders and sends them through a request,
@@ -31,19 +29,25 @@ public class RequestManager implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        String domain = exchange.getRequestHeaders().getFirst("host");
         String resource = exchange.getRequestURI().getPath();
+        String method = exchange.getRequestMethod();
 
         try {
             FileRetriever filesRetriever = new FileRetriever();
-            File resourceFile = filesRetriever.getFile(domain, resource);//consigue le archivo que desea con la peticion
-            sendResponse(exchange, resourceFile);
+            File resourceFile = filesRetriever.getFile(resource); //consigue el archivo que desea con la peticion
+            byte[] procesedFileBytes = processFile(resourceFile,method); //will send the files to the interpreter if needed, or if file is static it will check the method and decide
+            sendResponse(exchange, resourceFile, procesedFileBytes);
         } catch (FileNotFoundException e) {
             //todo make logger
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, 0);
+            exchange.close();
         } catch (IOException exception) {
             //todo make logger
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, 0);
+            exchange.close();
+        } catch (StaticFileRequestException exception) {
+            exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, 0);
+            exchange.close();
         }
     }
 
@@ -51,21 +55,20 @@ public class RequestManager implements HttpHandler {
      * Sends a response to the client, if the response failed it sends another response but 500
      *
      * @param exchange     the request received
-     * @param resourceFile the file to be send
+     * @param resourceFile the file to be sent
      * @throws IOException if in the sending of the response something failed
      */
-    private void sendResponse(HttpExchange exchange, File resourceFile) throws IOException {
+    private void sendResponse(HttpExchange exchange, File resourceFile, byte[] fileByte ) throws IOException {
         String mimeType = Files.probeContentType(resourceFile.toPath());
         if (mimeType == null) {
             mimeType = "application/octet-stream"; // Tipo genérico
         }
 
         try {
-            byte[] fileBytes = readFileToBytes(resourceFile);
             exchange.getResponseHeaders().add("Content-Type", mimeType);
-            exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, fileBytes.length);
+            exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, fileByte.length);
             OutputStream os = exchange.getResponseBody();
-            os.write(fileBytes);
+            os.write(fileByte);
             os.close();
         } catch (IOException exception) {
             //todo make logger
@@ -88,49 +91,39 @@ public class RequestManager implements HttpHandler {
         return fileBytes;
     }
 
-    //region Work in progress
-
-    //TODO NOT DONE STILL WORKING
     /**
-     * send a file though an interpreter
+     * processes the file
      * @param file
      * @throws IOException
+     * @throws StaticFileRequestException
      */
-    private String interpretFile(File file) throws IOException {
+    private byte[] processFile(File file, String httpMethod) throws IOException, StaticFileRequestException {
 
-        if (isJavascriptFile(file)) {
-            JavascriptProcessor processor = new JavascriptProcessor();
-            processor.processFile(file);
+        if (isStaticFile(file) && !httpMethod.equals("GET")) {
+            throw new StaticFileRequestException(file.getName());
         }
 
         if (isPHPFile(file)) {
-            PhpProcessor processor = new PhpProcessor();
+            FileProcessor processor = new PhpProcessor();
             processor.processFile(file);
         }
 
-        if (isCSSFile(file)) {
-            CssProcessor processor = new CssProcessor();
-            processor.processFile(file);
+        return readFileToBytes(file);
+    }
+
+    private boolean isStaticFile(File file) {
+        String name = file.getName();
+        int dotIndex = name.lastIndexOf(".");
+        if (dotIndex == -1 || dotIndex == name.length() - 1) {
+            return false; // No extension or dot is at the end
         }
 
-        return null;
+        String extension = name.substring(dotIndex + 1).toLowerCase();
+        return extension.equals("html") || extension.equals("css") || extension.equals("js");
     }
 
-    private boolean isJavascriptFile(File file) {
-        return file.getName().endsWith(".js");
-    }
 
     private boolean isPHPFile(File file) {
         return file.getName().endsWith(".php");
     }
-
-    private boolean isCSSFile(File file) {
-        return file.getName().endsWith(".css");
-    }
-
-    private byte[] readStringToBytes(String string) throws IOException {
-        return string.getBytes();
-    }
-
-    //endregion
 }

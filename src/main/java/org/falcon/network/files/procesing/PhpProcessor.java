@@ -1,4 +1,4 @@
-package org.falcon.files.procesing;
+package org.falcon.network.files.procesing;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -14,7 +14,7 @@ public class PhpProcessor implements FileProcessor {
      * @return
      */
     @Override
-    public File processFile(File file) throws FileNotFoundException, IOException {
+    public File processFile(File file) throws IOException {
         StringBuilder code = new StringBuilder();
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -31,21 +31,11 @@ public class PhpProcessor implements FileProcessor {
 
         try {
             StringBuilder fileOutput = new StringBuilder((String) engine.eval(code.toString()));
-            System.out.println(fileOutput.toString());
+            System.out.println(fileOutput);
         } catch (ScriptException ex) {
             throw new IOException(ex.getMessage());
         }
 
-
         return null;
-    }
-
-    public static void main(String[] args) {
-        PhpProcessor pp = new PhpProcessor();
-        try {
-            pp.processFile(new File("test.php"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

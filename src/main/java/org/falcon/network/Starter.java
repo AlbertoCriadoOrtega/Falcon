@@ -1,7 +1,7 @@
-package org.falcon;
+package org.falcon.network;
 
 import com.sun.net.httpserver.HttpServer;
-import org.falcon.errors.ExitErrorCodes;
+import org.falcon.network.errors.ExitErrorCodes;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -24,6 +24,7 @@ public class Starter {
             HttpServer server = HttpServer.create(new InetSocketAddress(PORT), BACKLOG);
             contextStart(server);
             server.start();
+            System.out.println("server started correctly");
         } catch (BindException exception) {
             //todo make logger
             System.exit(ExitErrorCodes.BINDING_ERROR_ON_SERVER_START);
