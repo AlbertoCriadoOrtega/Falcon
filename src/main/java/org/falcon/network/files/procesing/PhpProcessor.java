@@ -1,5 +1,7 @@
 package org.falcon.network.files.procesing;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -14,28 +16,40 @@ public class PhpProcessor implements FileProcessor {
      * @return
      */
     @Override
-    public File processFile(File file) throws IOException {
-        StringBuilder code = new StringBuilder();
+    public String processFile(File file, HttpExchange exchange) throws IOException {
+        ProcessBuilder processBuilder = new ProcessBuilder("./php/php-cgi.exe");
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            while (br.ready()) {
-                code.append(br.readLine());
-            }
+// Set environment variables
+        processBuilder.environment().put("SCRIPT_FILENAME", file.getAbsolutePath());
+        processBuilder.environment().put("QUERY_STRING", exchange.getRequestURI().getQuery());
+        processBuilder.environment().put("REQUEST_METHOD", exchange.getRequestMethod());
+        processBuilder.environment().put("REDIRECT_STATUS", "200"); // Required for php-cgi
+
+        Process proceso = processBuilder.start();
+
+        // Capture standard and error output
+        BufferedReader reader = new BufferedReader(new InputStreamReader(proceso.getInputStream()));
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(proceso.getErrorStream()));
+
+        StringBuilder respuesta = new StringBuilder();
+        String linea;
+
+        reader.readLine();//eliminates the php version notice
+        reader.readLine();//eliminates the content type notice
+        while ((linea = reader.readLine()) != null) {
+            respuesta.append(linea).append("\n");
         }
 
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("php");  // Replace "php" with the engine you're using
-        if (engine == null) {
-            throw new IOException("php not found");
+        StringBuilder errorOutput = new StringBuilder();
+        while ((linea = errorReader.readLine()) != null) {
+            errorOutput.append(linea).append("\n");
         }
 
-        try {
-            StringBuilder fileOutput = new StringBuilder((String) engine.eval(code.toString()));
-            System.out.println(fileOutput);
-        } catch (ScriptException ex) {
-            throw new IOException(ex.getMessage());
+        // Log errors (if any)
+        if (!errorOutput.isEmpty()) {
+            System.err.println("PHP CGI Error: " + errorOutput);
         }
 
-        return null;
+        return respuesta.toString();
     }
 }

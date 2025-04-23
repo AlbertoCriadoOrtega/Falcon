@@ -8,6 +8,9 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Class for when the first usage starts, it creates necessary folders and download necessary tools
+ */
 public class Installer {
 
     public Installer() {

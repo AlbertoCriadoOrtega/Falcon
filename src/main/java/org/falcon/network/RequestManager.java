@@ -30,12 +30,11 @@ public class RequestManager implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String resource = exchange.getRequestURI().getPath();
-        String method = exchange.getRequestMethod();
 
         try {
             FileRetriever filesRetriever = new FileRetriever();
             File resourceFile = filesRetriever.getFile(resource); //consigue el archivo que desea con la peticion
-            byte[] procesedFileBytes = processFile(resourceFile,method); //will send the files to the interpreter if needed, or if file is static it will check the method and decide
+            byte[] procesedFileBytes = processFile(resourceFile,exchange); //will send the files to the interpreter if needed, or if file is static it will check the method and decide
             sendResponse(exchange, resourceFile, procesedFileBytes);
         } catch (FileNotFoundException e) {
             //todo make logger
@@ -45,7 +44,9 @@ public class RequestManager implements HttpHandler {
             //todo make logger
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, 0);
             exchange.close();
+            exception.printStackTrace();
         } catch (StaticFileRequestException exception) {
+            exception.printStackTrace();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, 0);
             exchange.close();
         }
@@ -64,6 +65,12 @@ public class RequestManager implements HttpHandler {
             mimeType = "application/octet-stream"; // Tipo genérico
         }
 
+        if (mimeType.equals("text/plain") && resourceFile.getName().endsWith(".php")) {
+            mimeType = "text/html";
+        }
+
+        mimeType = mimeType + "; charset=utf-8"; // add charset
+
         try {
             exchange.getResponseHeaders().add("Content-Type", mimeType);
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, fileByte.length);
@@ -71,6 +78,7 @@ public class RequestManager implements HttpHandler {
             os.write(fileByte);
             os.close();
         } catch (IOException exception) {
+            exception.printStackTrace();
             //todo make logger
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, 0);
         }
@@ -97,15 +105,16 @@ public class RequestManager implements HttpHandler {
      * @throws IOException
      * @throws StaticFileRequestException
      */
-    private byte[] processFile(File file, String httpMethod) throws IOException, StaticFileRequestException {
+    private byte[] processFile(File file, HttpExchange exchange) throws IOException, StaticFileRequestException {
 
-        if (isStaticFile(file) && !httpMethod.equals("GET")) {
+        if (isStaticFile(file) && !exchange.getRequestMethod().equals("GET")) {
             throw new StaticFileRequestException(file.getName());
         }
 
         if (isPHPFile(file)) {
             FileProcessor processor = new PhpProcessor();
-            processor.processFile(file);
+            String processedFile = processor.processFile(file, exchange);
+            return processedFile.getBytes();
         }
 
         return readFileToBytes(file);
