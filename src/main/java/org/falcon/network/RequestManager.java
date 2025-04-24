@@ -16,6 +16,8 @@ import java.nio.file.Files;
  */
 public class RequestManager implements HttpHandler {
 
+    private final FileRetriever filesRetriever = new FileRetriever();
+
     public RequestManager() {}
 
     /**
@@ -32,7 +34,6 @@ public class RequestManager implements HttpHandler {
         String resource = exchange.getRequestURI().getPath();
 
         try {
-            FileRetriever filesRetriever = new FileRetriever();
             File resourceFile = filesRetriever.getFile(resource); //consigue el archivo que desea con la peticion
             byte[] procesedFileBytes = processFile(resourceFile,exchange); //will send the files to the interpreter if needed, or if file is static it will check the method and decide
             sendResponse(exchange, resourceFile, procesedFileBytes);
