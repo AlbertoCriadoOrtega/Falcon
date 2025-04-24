@@ -9,7 +9,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * Class for when the first usage starts, it creates necessary folders and download necessary tools
+ * Class responsible for setting up necessary folders and downloading required tools
+ * during the first usage of the application.
+ *  @author  albertocriadoortega
  */
 public class Installer {
 
@@ -21,6 +23,9 @@ public class Installer {
         }
     }
 
+    /**
+     * Creates the "pages" folder if it does not exist.
+     */
     public void createPagesFolder() {
         File pagesFolder = new File("pages");
 
@@ -29,6 +34,9 @@ public class Installer {
         }
     }
 
+    /**
+     * Downloads and extracts PHP if it is not already present in the "php" directory.
+     */
     public void downloadAndDecompressPHP() {
         String fileURL = "https://windows.php.net/downloads/releases/php-8.4.6-nts-Win32-vs17-x64.zip";
         String saveDir = "php"; // Folder where PHP will be downloaded and extracted
@@ -54,6 +62,13 @@ public class Installer {
         }
     }
 
+    /**
+     * Downloads a file from the given URL and saves it to the specified path.
+     *
+     * @param fileURL the URL of the file to be downloaded
+     * @param savePath the path where the file will be saved
+     * @throws IOException if an IO error occurs during the download
+     */
     private void downloadFile(String fileURL, String savePath) throws IOException {
         URL url = new URL(fileURL);
         HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
@@ -80,6 +95,13 @@ public class Installer {
         httpConn.disconnect();
     }
 
+    /**
+     * Extracts the contents of a ZIP file to the specified destination directory.
+     *
+     * @param zipFilePath the path to the ZIP file
+     * @param destDirectory the directory where the extracted files should be placed
+     * @throws IOException if an IO error occurs during the extraction
+     */
     private void unzip(String zipFilePath, String destDirectory) throws IOException {
         File destDir = new File(destDirectory);
         byte[] buffer = new byte[1024];

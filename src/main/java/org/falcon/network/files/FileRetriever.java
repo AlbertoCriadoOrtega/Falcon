@@ -4,6 +4,7 @@ import java.io.*;
 
 /**
  * this class gets the folder where all the files are stored of a web from the pages directory
+ * @author albertocriadoortega
  */
 public class FileRetriever {
 
@@ -22,10 +23,6 @@ public class FileRetriever {
         try {
             File pagesFolder = new File("pages");
 
-            if (!pagesFolder.exists()) {
-                pagesFolder.mkdir();
-            }
-
             File resourceFile = new File(pagesFolder, resource);
             if (!resourceFile.exists()) {
                 throw new FileNotFoundException(resource);
@@ -33,7 +30,6 @@ public class FileRetriever {
 
             return resourceFile;
         } catch (NullPointerException e) {
-            //todo make logger
             throw new FileNotFoundException(resource);
         }
     }
