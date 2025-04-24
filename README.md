@@ -1,6 +1,3 @@
-STILL WORK IN PROGRESS
+Falcon is a small weight http server for deploying page yourself at home
 
-Things to do:
-
-visual interface for easyness of use
-add security
+opens at port 8080
